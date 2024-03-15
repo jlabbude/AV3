@@ -20,15 +20,20 @@ public class Controller {
     public List<AirPollutionRecord> collectData() {
         List<AirPollutionRecord> records = new ArrayList<>();
         for (; salvadorStart.getLatitude() > salvadorEnd.getLatitude(); salvadorStart.setLatitude(salvadorStart.getLatitude() - diff)) {
-            for (; salvadorStart.getLongitude() < salvadorEnd.getLongitude(); salvadorStart.setLongitude(salvadorStart.getLongitude() + diff)) {
-                AirPollutionDetails airPollutionDetails = new OpenWeatherMapClient("e2ce3793c593a0d749bd61edc88077c2")
-                    .airPollution()
-                    .current()
-                    .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
-                    .retrieve()
-                    .asJava();
+            while (salvadorStart.getLongitude() < salvadorEnd.getLongitude()) {
+                try {
+                    AirPollutionDetails airPollutionDetails = new OpenWeatherMapClient("e2ce3793c593a0d749bd61edc88077c2")
+                        .airPollution()
+                        .current()
+                        .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
+                        .retrieve()
+                        .asJava();
 
-                records.addAll(airPollutionDetails.getAirPollutionRecords());
+                    records.addAll(airPollutionDetails.getAirPollutionRecords());
+                    salvadorStart.setLongitude(salvadorStart.getLongitude() + diff);
+                } catch (Exception e) {
+                    System.err.println(e.getMessage());
+                }
             }
         }
         return records;
