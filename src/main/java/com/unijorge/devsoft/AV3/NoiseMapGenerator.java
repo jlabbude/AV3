@@ -1,6 +1,7 @@
 package com.unijorge.devsoft.AV3;
 
 import com.github.prominence.openweathermap.api.enums.AirQualityIndex;
+import com.github.prominence.openweathermap.api.model.air.pollution.AirPollutionDetails;
 import com.github.prominence.openweathermap.api.model.air.pollution.AirPollutionRecord;
 
 import java.awt.Color;
@@ -14,30 +15,30 @@ import static com.unijorge.devsoft.AV3.Controller.salvadorEnd;
 import static com.unijorge.devsoft.AV3.Controller.salvadorStart;
 
 public class NoiseMapGenerator {
-    private static final int IMAGE_WIDTH = 100;  // Adjust these values to match your grid size
-    private static final int IMAGE_HEIGHT = 100;
 
-    public void generateNoiseMap(List<AirPollutionRecord> records) {
-        BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
+        public static final int IMAGE_WIDTH = 31;
+        public static final int IMAGE_HEIGHT = 22;
 
-        for (AirPollutionRecord record : records) {
-            double longitude = salvadorStart.getLongitude();
-            double latitude = salvadorEnd.getLatitude();
-            AirQualityIndex value = record.getAirQualityIndex();
+        public BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
 
-            Color color = mapValueToColor(value);
-            image.setRGB(longitude, latitude, color.getRGB());
-        }
+    public void generateNoiseMap(AirPollutionDetails airPollutionDetails) {
 
-        try {
-            ImageIO.write(image, "png", new File("noise_map.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        double longitude = salvadorStart.getLongitude();
+        double latitude = salvadorEnd.getLatitude();
+
+        Color color = mapValueToColor();
+
+        //todo turn double into int
+        getImage().setRGB(longitude, latitude, color.getRGB());
     }
 
-    private Color mapValueToColor(double value) {
-        int gray = (int) (255 * value / 100);  // Assuming value is in range 0-100
+    private Color mapValueToColor(int value) {
+        int gray = (255 * value / 4);
         return new Color(gray, gray, gray);
     }
+
+    public BufferedImage getImage(){
+        return this.image;
+    }
+
 }

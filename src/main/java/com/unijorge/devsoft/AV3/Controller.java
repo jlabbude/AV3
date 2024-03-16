@@ -7,6 +7,9 @@ import com.github.prominence.openweathermap.api.model.air.pollution.AirPollution
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,24 +21,35 @@ public class Controller {
 
     @GetMapping("/pollution")
     public List<AirPollutionRecord> collectData() {
-        List<AirPollutionRecord> records = new ArrayList<>();
-        for (; salvadorStart.getLatitude() > salvadorEnd.getLatitude(); salvadorStart.setLatitude(salvadorStart.getLatitude() - diff)) {
-            while (salvadorStart.getLongitude() < salvadorEnd.getLongitude()) {
-                try {
-                    AirPollutionDetails airPollutionDetails = new OpenWeatherMapClient("e2ce3793c593a0d749bd61edc88077c2")
-                        .airPollution()
-                        .current()
-                        .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
-                        .retrieve()
-                        .asJava();
 
-                    records.addAll(airPollutionDetails.getAirPollutionRecords());
-                    salvadorStart.setLongitude(salvadorStart.getLongitude() + diff);
-                } catch (Exception e) {
-                    System.err.println(e.getMessage());
-                }
+        List<AirPollutionRecord> records = new ArrayList<>();
+
+        NoiseMapGenerator noiseMapGenerator = new NoiseMapGenerator();
+
+        for (; salvadorStart.getLatitude() > salvadorEnd.getLatitude(); salvadorStart.setLatitude(salvadorStart.getLatitude() - diff)) {
+
+            for (; salvadorStart.getLongitude() < salvadorEnd.getLongitude(); salvadorStart.setLongitude(salvadorStart.getLongitude() + diff)) {
+
+                AirPollutionDetails airPollutionDetails = new OpenWeatherMapClient("e2ce3793c593a0d749bd61edc88077c2")
+                    .airPollution()
+                    .current()
+                    .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
+                    .retrieve()
+                    .asJava();
+
+                noiseMapGenerator.generateNoiseMap(airPollutionDetails);
+
+                records.addAll(airPollutionDetails.getAirPollutionRecords());
+
             }
         }
+
+        try {
+            ImageIO.write(, "png", new File("noise_map.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return records;
     }
 }
