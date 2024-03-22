@@ -19,9 +19,9 @@ public abstract class NoiseMapper {
      * Atualmente 1 pixel = ~ 1km²
      * (aproximadamente a área de um bairro pequeno/médio)
      */
-    public static final int IMAGE_WIDTH = 35;
+    public static final int IMAGE_WIDTH = 65;
 
-    public static final int IMAGE_HEIGHT = 24;
+    public static final int IMAGE_HEIGHT = 36;
 
     public static BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
 
