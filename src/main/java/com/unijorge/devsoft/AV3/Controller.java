@@ -1,6 +1,7 @@
 package com.unijorge.devsoft.AV3;
 
 import com.github.prominence.openweathermap.api.OpenWeatherMapClient;
+import com.github.prominence.openweathermap.api.exception.NoDataFoundException;
 import com.github.prominence.openweathermap.api.model.Coordinate;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,35 +25,55 @@ public class Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
-    //TODO: analisar possibilidade de diminuir diff
-
-    //como cada vez que diminuirmos o tamanho de cada pixel
-    //no mapa, aumentamos a quantidade de requisições
-    //precisa-se analisar se é possível e/ou viável criar e guardar as keys adicionais
-
     @GetMapping("/pollution")
     public ResponseEntity<Resource> collectData(CarbonOxideMapGenerator carbonOxideMapGenerator) {
 
-        final Coordinate salvadorEnd = Coordinate.of(-23.764444, -46.927778);
-        final Coordinate salvadorStart = Coordinate.of(-23.406389, -46.281944);
-        final double diff = 0.01;
+        final Coordinate saoPauloEnd = Coordinate.of(-23.764444, -46.927778);
+        final Coordinate saoPauloStart = Coordinate.of(-23.406389, -46.281944);
+        final double diff = 0.001;
 
         int keyIndex = 0;
         int rateLimiter = 0;
         List<String> keys = getKeys();
 
-        for (int latitudeImage = 0; salvadorStart.getLatitude() > salvadorEnd.getLatitude(); salvadorStart.setLatitude(salvadorStart.getLatitude() - diff), latitudeImage++) {
+        for (int latitudeImage = 0;
+             saoPauloStart.getLatitude() > saoPauloEnd.getLatitude();
+             saoPauloStart.setLatitude(saoPauloStart.getLatitude() - diff),
+             latitudeImage++) {
 
-            salvadorStart.setLongitude(-46.281944);
+            saoPauloStart.setLongitude(-46.281944);
 
-            for (int longitudeImage = 0; salvadorStart.getLongitude() > salvadorEnd.getLongitude(); salvadorStart.setLongitude(salvadorStart.getLongitude() - diff), longitudeImage++) {
+            for (int longitudeImage = 0;
+                 saoPauloStart.getLongitude() > saoPauloEnd.getLongitude();) {
 
-                String json = new OpenWeatherMapClient(keys.get(keyIndex))
-                    .airPollution()
-                    .current()
-                    .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
-                    .retrieve()
-                    .asJSON();
+                String json;
+                try {
+                     json = new OpenWeatherMapClient(keys.get(keyIndex))
+                            .airPollution()
+                            .current()
+                            .byCoordinate(Coordinate.of(saoPauloStart.getLatitude(), saoPauloStart.getLongitude()))
+                            .retrieve()
+                            .asJSON();
+
+                    saoPauloStart.setLongitude(saoPauloStart.getLongitude() - diff);
+                    longitudeImage++;
+
+                } catch (Exception e) {
+                    if (e instanceof SocketTimeoutException) {
+
+                        logger.debug("Connection timed out com a API", e);
+
+                        continue;
+                    } else if (e instanceof NoDataFoundException) {
+
+                            logger.debug("No data found", e);
+
+                            continue;
+                    }
+                    else {
+                        throw new RuntimeException(e);
+                    }
+                }
 
                 rateLimiter++;
 

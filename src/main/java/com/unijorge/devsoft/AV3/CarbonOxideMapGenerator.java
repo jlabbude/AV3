@@ -15,15 +15,6 @@ import java.awt.image.BufferedImage;
 @Service
 public class CarbonOxideMapGenerator extends NoiseMapper{
 
-        /**
-         * 805 queries (1 por pixel),
-         * 60 queries por minuto,
-         * 14 keys necessárias para processar
-         * o mapa sem esperar o rate limit acabar.
-         * Atualmente 1 pixel = ~ 1km²
-         * (aproximadamente a área de um bairro pequeno/médio)
-         */
-
     @Getter
     public static BufferedImage newImage = image;
 
