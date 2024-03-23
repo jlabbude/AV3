@@ -31,4 +31,6 @@ public abstract class NoiseMapper {
 
     public abstract int getPollutionIndex(String json) throws ParseException;
 
+    public abstract BufferedImage setTransparency(BufferedImage image);
+
 }

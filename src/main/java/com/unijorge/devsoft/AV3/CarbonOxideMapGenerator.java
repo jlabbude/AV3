@@ -34,27 +34,28 @@ public class CarbonOxideMapGenerator extends NoiseMapper{
         getNewImage().setRGB(longitude, latitude, color.getRGB());
 
     }
-
-
-    //TODO: definir escala para CO e outros componentes
     @Override
     public Color mapValueToColor(int value) {
 
-        int cor = 1;
+        int cor = (int) (value * (255d / 2000d));
 
-        return new Color(cor, 0, 0);
+
+        int cor2 = 255 - (int) (255 * (value / 2000d));
+
+
+        return new Color(255, cor, cor2);
 
     }
 
-//    @Override
-//    public BufferedImage setTransparency(BufferedImage image) {
-//        BufferedImage transparentImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
-//        Graphics2D g = transparentImage.createGraphics();
-//        g.setComposite(AlphaComposite.SrcOver.derive(0.5f));
-//        g.drawImage(image, null, 0, 0);
-//        g.dispose();
-//        return transparentImage;
-//    }
+    @Override
+    public BufferedImage setTransparency(BufferedImage image) {
+        BufferedImage transparentImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = transparentImage.createGraphics();
+        g.setComposite(AlphaComposite.SrcOver.derive(0.5f));
+        g.drawImage(image, null, 0, 0);
+        g.dispose();
+        return transparentImage;
+    }
 
     @Override
     public int getPollutionIndex(String json) throws ParseException {

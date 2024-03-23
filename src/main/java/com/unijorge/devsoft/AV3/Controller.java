@@ -1,5 +1,6 @@
 package com.unijorge.devsoft.AV3;
 
+import com.github.prominence.openweathermap.api.OpenWeatherMapClient;
 import com.github.prominence.openweathermap.api.model.Coordinate;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
@@ -19,21 +20,15 @@ import java.util.List;
 
 @RestController
 public class Controller {
-    static final Coordinate salvadorEnd = Coordinate.of(-13.017222, -38.534444);
-    static final Coordinate salvadorStart = Coordinate.of(-12.784722, -38.185202);
-    private static final double diff = 0.01;
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
-
-    //TODO: analisar possibilidade de diminuir diff
-
-    //como cada vez que diminuirmos o tamanho de cada pixel
-    //no mapa, aumentamos a quantidade de requisições
-    //precisa-se analisar se é possível e/ou viável criar e guardar as keys adicionais
-
     @GetMapping("/pollution")
     public ResponseEntity<Resource> collectData(CarbonOxideMapGenerator carbonOxideMapGenerator) {
+
+        final Coordinate salvadorEnd = Coordinate.of(-13.017222, -38.534444);
+        final Coordinate salvadorStart = Coordinate.of(-12.784722, -38.185202);
+        final double diff = 0.01;
 
         int keyIndex = 0;
         int rateLimiter = 0;
@@ -45,19 +40,19 @@ public class Controller {
 
             for (int longitudeImage = 0; salvadorStart.getLongitude() > salvadorEnd.getLongitude(); salvadorStart.setLongitude(salvadorStart.getLongitude() - diff), longitudeImage++) {
 
-//                String json = new OpenWeatherMapClient(keys.get(keyIndex))
-//                    .airPollution()
-//                    .current()
-//                    .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
-//                    .retrieve()
-//                    .asJSON();
+                String json = new OpenWeatherMapClient(keys.get(keyIndex))
+                    .airPollution()
+                    .current()
+                    .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
+                    .retrieve()
+                    .asJSON();
 
                 rateLimiter++;
 
                 if(rateLimiter == 60) { keyIndex++; rateLimiter = 0; }
 
                 //String json = "[{\"coordinate\":{\"latitude\":40.71,\"longitude\":-74.01},\"airPollutionRecords\":[{\"forecastTime\":\"2024-03-14T17:16:37\", \"airQualityIndex\":\"FAIR\", \"o3\":94.41, \"co\":440.6, \"no\":8.05, \"no2\":37.01, \"so2\":8.94, \"pm2_5\":21.59, \"pm10\":27.09, \"nh3\":3.86, \"carbonMonoxide\":440.6, \"sulphurDioxide\":8.94, \"nitrogenDioxide\":37.01, \"coarseParticulateMatter\":27.09, \"fineParticlesMatter\":21.59, \"nitrogenMonoxide\":8.05, \"ozone\":94.41, \"ammonia\":3.86}]}]";
-                String json = "{\"coord\":{\"lon\":-38.1852,\"lat\":-12.7847},\"list\":[{\"main\":{\"aqi\":1},\"components\":{\"co\":297.07,\"no\":0.08,\"no2\":0.35,\"o3\":37.19,\"so2\":0.77,\"pm2_5\":1.03,\"pm10\":4.8,\"nh3\":0.05},\"dt\":1710688227}]}";
+                //String json = "{\"coord\":{\"lon\":-38.1852,\"lat\":-12.7847},\"list\":[{\"main\":{\"aqi\":1},\"components\":{\"co\":297.07,\"no\":0.08,\"no2\":0.35,\"o3\":37.19,\"so2\":0.77,\"pm2_5\":1.03,\"pm10\":4.8,\"nh3\":0.05},\"dt\":1710688227}]}";
 
                 logger.debug("json: {}", json);
 
@@ -66,7 +61,7 @@ public class Controller {
             }
         }
 
-        try { ImageIO.write(carbonOxideMapGenerator.getNewImage(), "png", new File("noise_map.png")); }
+        try { ImageIO.write(carbonOxideMapGenerator.setTransparency(carbonOxideMapGenerator.getNewImage()), "png", new File("noise_map.png")); }
         catch (IOException e) { e.printStackTrace(); }
 
 
