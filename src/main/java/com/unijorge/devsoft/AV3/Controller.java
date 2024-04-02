@@ -30,6 +30,8 @@ public class Controller {
         final Coordinate salvadorStart = Coordinate.of(-12.784722, -38.185202);
         final double diff = 0.01;
 
+        final String component = "co";
+
         int keyIndex = 0;
         int rateLimiter = 0;
         List<String> keys = Keys();
@@ -51,18 +53,25 @@ public class Controller {
 
                 if(rateLimiter == 60) { keyIndex++; rateLimiter = 0; }
 
+                /*
+                 Templates do que é retornado pela API
+                 o primeiro é retornado ao utilizar asJava()
+                 e o segundo ao utilizar asJSON()
+                */
+
                 //String json = "[{\"coordinate\":{\"latitude\":40.71,\"longitude\":-74.01},\"airPollutionRecords\":[{\"forecastTime\":\"2024-03-14T17:16:37\", \"airQualityIndex\":\"FAIR\", \"o3\":94.41, \"co\":440.6, \"no\":8.05, \"no2\":37.01, \"so2\":8.94, \"pm2_5\":21.59, \"pm10\":27.09, \"nh3\":3.86, \"carbonMonoxide\":440.6, \"sulphurDioxide\":8.94, \"nitrogenDioxide\":37.01, \"coarseParticulateMatter\":27.09, \"fineParticlesMatter\":21.59, \"nitrogenMonoxide\":8.05, \"ozone\":94.41, \"ammonia\":3.86}]}]";
                 //String json = "{\"coord\":{\"lon\":-38.1852,\"lat\":-12.7847},\"list\":[{\"main\":{\"aqi\":1},\"components\":{\"co\":297.07,\"no\":0.08,\"no2\":0.35,\"o3\":37.19,\"so2\":0.77,\"pm2_5\":1.03,\"pm10\":4.8,\"nh3\":0.05},\"dt\":1710688227}]}";
 
                 logger.debug("json: {}", json);
 
-                try { carbonOxideMapGenerator.noiseMapMapper(json, longitudeImage, latitudeImage); }
+                try { carbonOxideMapGenerator.noiseMapMapper(json, longitudeImage, latitudeImage, component); }
                 catch (ParseException e) { throw new RuntimeException(e); }
             }
         }
 
-        try { ImageIO.write(carbonOxideMapGenerator.setTransparency(carbonOxideMapGenerator.getNewImage()), "png", new File("noise_map.png")); }
-        catch (IOException e) { e.printStackTrace(); }
+        try { //noinspection AccessStaticViaInstance
+            ImageIO.write(carbonOxideMapGenerator.setTransparency(carbonOxideMapGenerator.getNewImage()), "png", new File("noise_map.png")); }
+        catch (IOException e) { logger.error("Error writing image to file", e);  }
 
 
         org.springframework.core.io.Resource resource = new FileSystemResource("noise_map.png");
