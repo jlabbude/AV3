@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpClientErrorException;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -42,12 +43,18 @@ public class Controller {
 
             for (int longitudeImage = 0; salvadorStart.getLongitude() > salvadorEnd.getLongitude(); salvadorStart.setLongitude(salvadorStart.getLongitude() - diff), longitudeImage++) {
 
-                String json = new OpenWeatherMapClient(keys.get(keyIndex))
-                    .airPollution()
-                    .current()
-                    .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
-                    .retrieve()
-                    .asJSON();
+                String json = null;
+                try {
+                    json = new OpenWeatherMapClient(keys.get(keyIndex))
+                        .airPollution()
+                        .current()
+                        .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
+                        .retrieve()
+                        .asJSON();
+                }
+                catch (HttpClientErrorException e) {
+                    logger.error("Erro de conexão", e);
+                }
 
                 rateLimiter++;
 
