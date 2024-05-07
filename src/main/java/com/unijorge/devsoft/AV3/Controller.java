@@ -80,7 +80,6 @@ public class Controller {
 
                     JSONObject response = new JSONObject();
                     response.put(currentCoordinate.getLatitude() + "," + currentCoordinate.getLongitude(), json);
-                    response.put(salvadorStart.getLatitude() + "," + salvadorStart.getLongitude(), json);
                     responses.add(response);
 
                 }, executor);
