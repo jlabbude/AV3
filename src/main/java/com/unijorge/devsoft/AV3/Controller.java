@@ -2,22 +2,24 @@ package com.unijorge.devsoft.AV3;
 
 import com.github.prominence.openweathermap.api.OpenWeatherMapClient;
 import com.github.prominence.openweathermap.api.model.Coordinate;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
 
-import javax.imageio.ImageIO;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @RestController
 public class Controller {
@@ -25,7 +27,7 @@ public class Controller {
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
 
     @GetMapping("/pollution")
-    public ResponseEntity<Resource> collectData(CarbonOxideMapGenerator carbonOxideMapGenerator) {
+    public ResponseEntity<String> collectData(CarbonOxideMapGenerator carbonOxideMapGenerator) {
 
         final Coordinate salvadorEnd = Coordinate.of(-13.017222, -38.534444);
         final Coordinate salvadorStart = Coordinate.of(-12.784722, -38.185202);
@@ -37,53 +39,64 @@ public class Controller {
         int rateLimiter = 0;
         List<String> keys = Keys();
 
-        for (int latitudeImage = 0; salvadorStart.getLatitude() > salvadorEnd.getLatitude(); salvadorStart.setLatitude(salvadorStart.getLatitude() - diff), latitudeImage++) {
+        ExecutorService executor = Executors.newFixedThreadPool(10); // Adjust the number of threads based on your needs
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        JSONArray responses = new JSONArray();
+
+        for (int latitudeImage = 0;
+             salvadorStart.getLatitude() > salvadorEnd.getLatitude();
+             salvadorStart.setLatitude(salvadorStart.getLatitude() - diff), latitudeImage++) {
 
             salvadorStart.setLongitude(-38.185202);
 
-            for (int longitudeImage = 0; salvadorStart.getLongitude() > salvadorEnd.getLongitude(); salvadorStart.setLongitude(salvadorStart.getLongitude() - diff), longitudeImage++) {
+            for (int longitudeImage = 0;
+                 salvadorStart.getLongitude() > salvadorEnd.getLongitude();
+                 salvadorStart.setLongitude(salvadorStart.getLongitude() - diff), longitudeImage++) {
 
-                String json = null;
-                try {
-                    json = new OpenWeatherMapClient(keys.get(keyIndex))
-                        .airPollution()
-                        .current()
-                        .byCoordinate(Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude()))
-                        .retrieve()
-                        .asJSON();
-                }
-                catch (HttpClientErrorException e) {
-                    logger.error("Erro de conexão", e);
-                }
+                int finalKeyIndex = keyIndex;
+                int finalLongitudeImage = longitudeImage;
+                int finalLatitudeImage = latitudeImage;
 
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                    Coordinate currentCoordinate = Coordinate.of(salvadorStart.getLatitude(), salvadorStart.getLongitude());
+                    String json = null;
+                    try {
+                        json = new OpenWeatherMapClient(keys.get(finalKeyIndex))
+                                .airPollution()
+                                .current()
+                                .byCoordinate(
+                                        Coordinate.of(salvadorStart.getLatitude(),
+                                                      salvadorStart.getLongitude()))
+                                .retrieve()
+                                .asJSON();
+                    }
+                    //String json = "[{\"coordinate\":{\"latitude\":40.71,\"longitude\":-74.01},\"airPollutionRecords\":[{\"forecastTime\":\"2024-03-14T17:16:37\", \"airQualityIndex\":\"FAIR\", \"o3\":94.41, \"co\":440.6, \"no\":8.05, \"no2\":37.01, \"so2\":8.94, \"pm2_5\":21.59, \"pm10\":27.09, \"nh3\":3.86, \"carbonMonoxide\":440.6, \"sulphurDioxide\":8.94, \"nitrogenDioxide\":37.01, \"coarseParticulateMatter\":27.09, \"fineParticlesMatter\":21.59, \"nitrogenMonoxide\":8.05, \"ozone\":94.41, \"ammonia\":3.86}]}]";
+                    //String json = "{\"coord\":{\"lon\":-38.1852,\"lat\":-12.7847},\"list\":[{\"main\":{\"aqi\":1},\"components\":{\"co\":297.07,\"no\":0.08,\"no2\":0.35,\"o3\":37.19,\"so2\":0.77,\"pm2_5\":1.03,\"pm10\":4.8,\"nh3\":0.05},\"dt\":1710688227}]}";
+                    catch (HttpClientErrorException e) { logger.error("Erro de conexão", e); }
+                    logger.debug("json: {}", json);
+
+                    try { carbonOxideMapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component); }
+                    catch (ParseException e) { throw new RuntimeException(e); }
+
+                    JSONObject response = new JSONObject();
+                    response.put(currentCoordinate.getLatitude() + "," + currentCoordinate.getLongitude(), json);
+                    response.put(salvadorStart.getLatitude() + "," + salvadorStart.getLongitude(), json);
+                    responses.add(response);
+
+                }, executor);
+                futures.add(future);
                 rateLimiter++;
-
                 if(rateLimiter == 60) { keyIndex++; rateLimiter = 0; }
-
-                /*
-                 Templates do que é retornado pela API
-                 o primeiro é retornado ao utilizar asJava()
-                 e o segundo ao utilizar asJSON()
-                */
-
-                //String json = "[{\"coordinate\":{\"latitude\":40.71,\"longitude\":-74.01},\"airPollutionRecords\":[{\"forecastTime\":\"2024-03-14T17:16:37\", \"airQualityIndex\":\"FAIR\", \"o3\":94.41, \"co\":440.6, \"no\":8.05, \"no2\":37.01, \"so2\":8.94, \"pm2_5\":21.59, \"pm10\":27.09, \"nh3\":3.86, \"carbonMonoxide\":440.6, \"sulphurDioxide\":8.94, \"nitrogenDioxide\":37.01, \"coarseParticulateMatter\":27.09, \"fineParticlesMatter\":21.59, \"nitrogenMonoxide\":8.05, \"ozone\":94.41, \"ammonia\":3.86}]}]";
-                //String json = "{\"coord\":{\"lon\":-38.1852,\"lat\":-12.7847},\"list\":[{\"main\":{\"aqi\":1},\"components\":{\"co\":297.07,\"no\":0.08,\"no2\":0.35,\"o3\":37.19,\"so2\":0.77,\"pm2_5\":1.03,\"pm10\":4.8,\"nh3\":0.05},\"dt\":1710688227}]}";
-
-                logger.debug("json: {}", json);
-
-                try { carbonOxideMapGenerator.noiseMapMapper(json, longitudeImage, latitudeImage, component); }
-                catch (ParseException e) { throw new RuntimeException(e); }
             }
         }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        try { //noinspection AccessStaticViaInstance
-            ImageIO.write(carbonOxideMapGenerator.setTransparency(carbonOxideMapGenerator.getNewImage()), "png", new File("noise_map.png")); }
-        catch (IOException e) { logger.error("Error writing image to file", e);  }
+        String jsonOutput = responses.toJSONString();
 
+        try { Files.writeString(Paths.get("output.json"), jsonOutput); }
+        catch (IOException e) { logger.error("Error writing to file", e); }
 
-        org.springframework.core.io.Resource resource = new FileSystemResource("noise_map.png");
-        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(resource);
-
+        return ResponseEntity.ok().body(responses.toJSONString());
     }
 
     private List<String> Keys() {
