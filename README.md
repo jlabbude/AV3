@@ -6,4 +6,4 @@ Até o momento atual a ideia do projeto é dinâmicamente gerar um mapa interati
 
 ### TODO: 
 
-- [ ] Executar requests para a API de forma paralela
+- [x] Executar requests para a API de forma paralela
