@@ -1,6 +1,6 @@
 ## AV3 de Laboratório de desenvolvimento de software
 
-!(protótipo)[https://i.ibb.co/wzYyhKb/PRIMEIRO.png]
+![protótipo](https://i.ibb.co/wzYyhKb/PRIMEIRO.png)
 
 ### Projeto: Mapa de calor da poluição do ar
 
