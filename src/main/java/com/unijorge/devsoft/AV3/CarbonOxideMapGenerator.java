@@ -24,17 +24,23 @@ public class CarbonOxideMapGenerator implements NoiseMapper{
     }
 
     @Override
-    public Color mapValueToColor(int value) {
+    public Color mapValueToColor(double value) {
+        double minValue = 0;
+        double maxValue = 16000;
 
-        int cor = (int) (value * (255d / 2000d));
+        double normalizedValue = (value - minValue) / (maxValue - minValue);
 
+        int r = (int) (255 * Math.pow(normalizedValue, 0.5));  // Adjust sensitivity with power function
+        int g = 255 - (int) (255 * normalizedValue);
+        int b = 0;
 
-        int cor2 = 255 - (int) (255 * (value / 2000d));
+        r = Math.max(0, Math.min(255, r));
+        g = Math.max(0, Math.min(255, g));
+        b = Math.max(0, Math.min(255, b));
 
-
-        return new Color(255, cor, cor2);
-
+        return new Color(r, g, b);
     }
+
 
     @Override
     public BufferedImage setTransparency(BufferedImage image) {
@@ -42,7 +48,7 @@ public class CarbonOxideMapGenerator implements NoiseMapper{
     }
 
     @Override
-    public int getPollutionIndexInComponents(String json, String component) throws ParseException {
+    public double getPollutionIndexInComponents(String json, String component) throws ParseException {
         return NoiseMapper.super.getPollutionIndexInComponents(json, component);
     }
 }

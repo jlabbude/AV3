@@ -21,9 +21,9 @@ public interface NoiseMapper {
 
     //TODO:atualizar números
 
-    int IMAGE_WIDTH = 35;
+    int IMAGE_WIDTH = 60;
 
-    int IMAGE_HEIGHT = 24;
+    int IMAGE_HEIGHT = 30;
 
     BufferedImage image = new BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB);
 
@@ -35,7 +35,7 @@ public interface NoiseMapper {
 
     //mapValueToColor precisa ser abstrato para habilitar que subclasses
     //implementem diferentes formas de calcular a cor baseado no valor máximo retornado
-    Color mapValueToColor(int value);
+    Color mapValueToColor(double value);
 
     /**
     * Dentro do elemento components encontrado no JSON retornado pelo método asJSON() da classe OpenWeatherMapClient,
@@ -51,7 +51,7 @@ public interface NoiseMapper {
      * Utilize um desses componentes como String no método abaixo para obter o índice de poluição correspondente.
     */
 
-    default int getPollutionIndexInComponents(String json, String component) throws ParseException {
+    default double getPollutionIndexInComponents(String json, String component) throws ParseException {
 
         JSONParser parser = new JSONParser();
         JSONObject jsonObject = (JSONObject) parser.parse(json);
@@ -60,7 +60,7 @@ public interface NoiseMapper {
         JSONObject firstElement = (JSONObject) listArray.getFirst();
         JSONObject components = (JSONObject) firstElement.get("components");
 
-        return ((Double) components.get(component)).intValue();
+        return ((Number) components.get(component)).doubleValue();
     }
 
     default BufferedImage setTransparency(BufferedImage image){

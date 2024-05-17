@@ -31,21 +31,21 @@ public class Controller {
     @GetMapping("/pollution")
     public ResponseEntity<Resource> collectData(CarbonOxideMapGenerator carbonOxideMapGenerator) {
 
-        final Coordinate salvadorEnd = Coordinate.of(-13.017222, -38.534444);
-        final Coordinate salvadorStart = Coordinate.of(-12.784722, -38.185202);
-        final double diff = 0.01;
+        final Coordinate coordEnd = Coordinate.of(-90, 180);
+        final Coordinate coordStart = Coordinate.of(90, -180);
+        final double diff = 6;
 
         final String component = "co";
 
-        CompletableFuture<Resource> futureResource = asyncRequest(salvadorStart, salvadorEnd, diff, component, carbonOxideMapGenerator);
+        CompletableFuture<Resource> futureResource = asyncRequest(coordStart, coordEnd, diff, component, carbonOxideMapGenerator);
         Resource resource = futureResource.join();
 
         return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(resource);
     }
 
     @Async
-    public CompletableFuture<Resource> asyncRequest(final Coordinate salvadorStart,
-                                                    final Coordinate salvadorEnd,
+    public CompletableFuture<Resource> asyncRequest(Coordinate coordStart,
+                                                    Coordinate coordEnd,
                                                     final double diff,
                                                     final String component,
                                                     CarbonOxideMapGenerator carbonOxideMapGenerator) {
@@ -55,18 +55,24 @@ public class Controller {
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-        for (int latitudeImage = 0;
-             salvadorStart.getLatitude() > salvadorEnd.getLatitude();
-             salvadorStart.setLatitude(salvadorStart.getLatitude() - diff), latitudeImage++) {
+        double latitude = coordStart.getLatitude();
+        double longitude = coordStart.getLongitude();
 
-            salvadorStart.setLongitude(-38.185202);
+        for (int latitudeImage = 0;
+             latitude > coordEnd.getLatitude();
+             latitude -= diff, latitudeImage++) {
+
+            longitude = -180;
             for (int longitudeImage = 0;
-                 salvadorStart.getLongitude() > salvadorEnd.getLongitude();
-                 salvadorStart.setLongitude(salvadorStart.getLongitude() - diff), longitudeImage++) {
+                 longitude < coordEnd.getLongitude();
+                 longitude += diff, longitudeImage++) {
 
                 int finalKeyIndex = keyIndex;
                 int finalLongitudeImage = longitudeImage;
                 int finalLatitudeImage = latitudeImage;
+
+                double finalLatitude = latitude;
+                double finalLongitude = longitude;
 
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     String json = null;
@@ -75,12 +81,13 @@ public class Controller {
                                 .airPollution()
                                 .current()
                                 .byCoordinate(
-                                        Coordinate.of(salvadorStart.getLatitude(),
-                                                      salvadorStart.getLongitude()))
+                                        Coordinate.of(finalLatitude,
+                                                finalLongitude))
                                 .retrieve()
                                 .asJSON();
                     }
                     catch (HttpClientErrorException e) { logger.error("Erro de conexão", e); }
+                    logger.debug("lat: {}, lon: {}", finalLatitude, finalLongitude);
                     logger.debug("json: {}", json);
 
                     try { carbonOxideMapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component); }
@@ -90,7 +97,8 @@ public class Controller {
                 futures.add(future);
 
                 rateLimiter++;
-                if(rateLimiter == 60) { keyIndex++; rateLimiter = 0; }
+                if(keyIndex == keys.size() - 1 && rateLimiter == 60) keyIndex = 0;
+                else if(rateLimiter == 60) { keyIndex++; rateLimiter = 0; }
             }
         }
 
