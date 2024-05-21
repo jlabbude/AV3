@@ -2,15 +2,19 @@ package com.unijorge.devsoft.AV3;
 
 import com.github.prominence.openweathermap.api.OpenWeatherMapClient;
 import com.github.prominence.openweathermap.api.model.Coordinate;
+import jakarta.annotation.PostConstruct;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.HttpClientErrorException;
@@ -22,25 +26,38 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+@EnableCaching
 @RestController
 @EnableAsync
 public class Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
+    private static final String NOISE_MAP = "noise_map.png";
 
+    @Cacheable("map")
     @GetMapping("/pollution")
-    public ResponseEntity<Resource> collectData(CarbonOxideMapGenerator carbonOxideMapGenerator) {
+    public ResponseEntity<Resource> displayMap() {
 
+        Resource resource = new FileSystemResource(NOISE_MAP);
+
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(resource);
+    }
+
+    @Async
+    @PostConstruct
+    @Scheduled(fixedRate = 3600000)
+    public void initMap(){
         final Coordinate coordEnd = Coordinate.of(-90, 180);
         final Coordinate coordStart = Coordinate.of(90, -180);
         final double diff = 6;
 
-        final String component = "co";
+        final String component = "pm10";
 
-        CompletableFuture<Resource> futureResource = asyncRequest(coordStart, coordEnd, diff, component, carbonOxideMapGenerator);
-        Resource resource = futureResource.join();
+        PM10MapGenerator pm10MapGenerator = new PM10MapGenerator();
 
-        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(resource);
+        CompletableFuture<Resource> futureResource = asyncRequest(coordStart, coordEnd, diff, component, pm10MapGenerator);
+
+        futureResource.join();
     }
 
     @Async
@@ -48,7 +65,7 @@ public class Controller {
                                                     Coordinate coordEnd,
                                                     final double diff,
                                                     final String component,
-                                                    CarbonOxideMapGenerator carbonOxideMapGenerator) {
+                                                    PM10MapGenerator pm10MapGenerator) {
         int keyIndex = 0;
         int rateLimiter = 0;
         List<String> keys = new Keys().keys();
@@ -56,7 +73,8 @@ public class Controller {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         double latitude = coordStart.getLatitude();
-        double longitude = coordStart.getLongitude();
+        double longitude; // = coordStart.getLongitude(); <-- Removed variable initializer for optimization,
+                          //                                  keeping it as comment for clarity of what's going on
 
         for (int latitudeImage = 0;
              latitude > coordEnd.getLatitude();
@@ -86,11 +104,12 @@ public class Controller {
                                 .retrieve()
                                 .asJSON();
                     }
-                    catch (HttpClientErrorException e) { logger.error("Erro de conexão", e); }
+                    catch (HttpClientErrorException e) { logger.error("Erro de conexão"); }
+                    catch (IllegalStateException e) { logger.error("Rate limit"); }
                     logger.debug("lat: {}, lon: {}", finalLatitude, finalLongitude);
                     logger.debug("json: {}", json);
 
-                    try { carbonOxideMapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component); }
+                    try { pm10MapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component); }
                     catch (ParseException e) { throw new RuntimeException(e); }
                 });
 
@@ -105,10 +124,10 @@ public class Controller {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
         try { //noinspection AccessStaticViaInstance
-            ImageIO.write(carbonOxideMapGenerator.setTransparency(carbonOxideMapGenerator.getNewImage()), "png", new File("noise_map.png")); }
+            ImageIO.write(pm10MapGenerator.setTransparency(pm10MapGenerator.getNewImage()), "png", new File(NOISE_MAP)); }
         catch (IOException e) { logger.error("Error writing image to file", e);  }
 
-        Resource resource = new FileSystemResource("noise_map.png");
+        Resource resource = new FileSystemResource(NOISE_MAP);
 
         return CompletableFuture.completedFuture(resource);
     }

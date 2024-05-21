@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 @Service
-public class CarbonOxideMapGenerator implements NoiseMapper{
+public class PM10MapGenerator implements NoiseMapper{
 
     @Getter
     public static BufferedImage newImage = image;
@@ -26,7 +26,7 @@ public class CarbonOxideMapGenerator implements NoiseMapper{
     @Override
     public Color mapValueToColor(double value) {
         double minValue = 0;
-        double maxValue = 16000;
+        double maxValue = 480;
 
         double normalizedValue = (value - minValue) / (maxValue - minValue);
 
@@ -36,7 +36,7 @@ public class CarbonOxideMapGenerator implements NoiseMapper{
 
         r = Math.max(0, Math.min(255, r));
         g = Math.max(0, Math.min(255, g));
-        b = Math.max(0, Math.min(255, b));
+      //b = Math.max(0, Math.min(255, b)); <-- Future use\
 
         return new Color(r, g, b);
     }
