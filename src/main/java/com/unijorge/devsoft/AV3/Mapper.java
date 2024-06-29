@@ -46,18 +46,25 @@ public class Mapper {
 
             PM10MapGenerator pm10MapGenerator = new PM10MapGenerator();
 
-            CompletableFuture<Resource> futureResource = asyncRequest(coordStart, coordEnd, diff, component, pm10MapGenerator);
+            CompletableFuture<Resource> futureResource =
+                    dataRetriever(
+                            coordStart,
+                            coordEnd,
+                            diff,
+                            component,
+                            pm10MapGenerator
+                    );
 
             futureResource.join();
         }).start();
     }
 
     @Async
-    public CompletableFuture<Resource> asyncRequest(Coordinate coordStart,
-                                                    Coordinate coordEnd,
-                                                    final double diff,
-                                                    final String component,
-                                                    PM10MapGenerator pm10MapGenerator) {
+    public CompletableFuture<Resource> dataRetriever(Coordinate coordStart,
+                                                     Coordinate coordEnd,
+                                                     final double diff,
+                                                     final String component,
+                                                     PM10MapGenerator pm10MapGenerator) {
         int keyIndex = 0;
         int rateLimiter = 0;
         List<String> keys = new Keys().keys();
@@ -66,14 +73,16 @@ public class Mapper {
 
         double latitude = coordStart.getLatitude();
         double longitude; // = coordStart.getLongitude(); <-- Removed variable initializer for optimization,
-        //                                  keeping it as comment for clarity of what's going on
+                          //                                  keeping it as comment for clarity of what's going on
 
         JSONArray responses = new JSONArray();
+        new File(NOISE_MAP).delete();
 
         for (int latitudeImage = 0;
              latitude > coordEnd.getLatitude();
              latitude -= diff, latitudeImage++) {
 
+            // Reset back to start
             longitude = -180;
             for (int longitudeImage = 0;
                  longitude < coordEnd.getLongitude();
@@ -93,8 +102,11 @@ public class Mapper {
                                 .airPollution()
                                 .current()
                                 .byCoordinate(
-                                        Coordinate.of(finalLatitude,
-                                                finalLongitude))
+                                        Coordinate.of(
+                                                finalLatitude,
+                                                finalLongitude
+                                        )
+                                )
                                 .retrieve()
                                 .asJSON();
                     }
