@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static com.unijorge.devsoft.AV3.Controller.NOISE_DATA;
+import static com.unijorge.devsoft.AV3.Controller.NOISE_MAP;
+
 @Service
 @EnableAsync
 public class Mapper {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
-    private static final String NOISE_MAP = "noise_map.png";
 
     @PostConstruct
     @Scheduled(fixedRate = 3600000)
@@ -122,7 +124,7 @@ public class Mapper {
 
 
         try {
-            Files.write(Paths.get("output.json"), responses.toJSONString().getBytes());
+            Files.write(Paths.get(NOISE_DATA), responses.toJSONString().getBytes());
             ImageIO.write(pm10MapGenerator.setTransparency(pm10MapGenerator.getNewImage()), "png", new File(NOISE_MAP)); }
         catch (IOException e) { logger.error("Error writing image to file", e);  }
 

@@ -15,8 +15,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableAsync
 public class Controller implements WebMvcConfigurer {
 
-    private static final String NOISE_MAP = "noise_map.png";
-    private static final String NOISE_DATA = "output.json";
+    public static final String NOISE_MAP = "noise_map.png";
+    public static final String NOISE_DATA = "noise_data.json";
 
     @GetMapping("/pollution")
     public ResponseEntity<Resource> displayMap() {
