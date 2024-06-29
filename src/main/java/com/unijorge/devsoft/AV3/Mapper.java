@@ -3,6 +3,8 @@ package com.unijorge.devsoft.AV3;
 import com.github.prominence.openweathermap.api.OpenWeatherMapClient;
 import com.github.prominence.openweathermap.api.model.Coordinate;
 import jakarta.annotation.PostConstruct;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -62,6 +66,8 @@ public class Mapper {
         double longitude; // = coordStart.getLongitude(); <-- Removed variable initializer for optimization,
         //                                  keeping it as comment for clarity of what's going on
 
+        JSONArray responses = new JSONArray();
+
         for (int latitudeImage = 0;
              latitude > coordEnd.getLatitude();
              latitude -= diff, latitudeImage++) {
@@ -95,7 +101,12 @@ public class Mapper {
                     logger.debug("lat: {}, lon: {}", finalLatitude, finalLongitude);
                     logger.debug("json: {}", json);
 
-                    try { pm10MapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component); }
+                    try {
+                        pm10MapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component);
+                        JSONObject response = new JSONObject();
+                        response.put(finalLatitude + "," + finalLatitude, json);
+                        responses.add(response);
+                    }
                     catch (ParseException e) { throw new RuntimeException(e); }
                 });
 
@@ -109,7 +120,9 @@ public class Mapper {
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-        try { //noinspection AccessStaticViaInstance
+
+        try {
+            Files.write(Paths.get("output.json"), responses.toJSONString().getBytes());
             ImageIO.write(pm10MapGenerator.setTransparency(pm10MapGenerator.getNewImage()), "png", new File(NOISE_MAP)); }
         catch (IOException e) { logger.error("Error writing image to file", e);  }
 
