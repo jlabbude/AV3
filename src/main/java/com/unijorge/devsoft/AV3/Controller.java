@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
@@ -36,16 +37,18 @@ public class Controller implements WebMvcConfigurer {
     }
 
     @GetMapping("/data")
-    public ResponseEntity<JsonNode> data(@RequestParam String coordXY) throws IOException {
+    @ResponseBody
+    public ResponseEntity<String> data(@RequestParam float x, @RequestParam float y) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(new File(NOISE_DATA));
+        String coordXY = x+","+y;
 
         for (JsonNode node : root) {
-            if (node.toString().equals(coordXY)) {
+            if (node.get(coordXY) != null) {
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                        .body(node);
+                        .body(node.get(coordXY).asText());
             }
         }
 
