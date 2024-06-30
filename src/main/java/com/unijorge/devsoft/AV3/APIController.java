@@ -8,21 +8,17 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.File;
 
-import static com.unijorge.devsoft.AV3.Mapper.diff;
+import static com.unijorge.devsoft.AV3.mapgen.Mapper.diff;
 
 @EnableCaching
-@org.springframework.stereotype.Controller
+@RestController
 @EnableAsync
-public class Controller implements WebMvcConfigurer {
+public class APIController {
 
     public static final String NOISE_MAP = "noise_map.png";
     public static final String NOISE_DATA = "noise_data.json";
@@ -64,11 +60,6 @@ public class Controller implements WebMvcConfigurer {
 
     }
 
-
-    @RequestMapping(value="/map")
-    public String map() {
-        return "forward:map.html";
-    }
 }
 
 

@@ -1,15 +1,14 @@
-package com.unijorge.devsoft.AV3;
+package com.unijorge.devsoft.AV3.mapgen;
 
 import lombok.Getter;
 import org.json.simple.parser.ParseException;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
 @Component
-public class PM10MapGenerator implements NoiseMapper{
+public class PM10MapGenerator implements NoiseMapper {
 
     @Getter
     public static BufferedImage newImage = image;

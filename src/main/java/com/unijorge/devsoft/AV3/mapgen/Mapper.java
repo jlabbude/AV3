@@ -1,8 +1,8 @@
-package com.unijorge.devsoft.AV3;
+package com.unijorge.devsoft.AV3.mapgen;
 
 import com.github.prominence.openweathermap.api.OpenWeatherMapClient;
 import com.github.prominence.openweathermap.api.model.Coordinate;
-import jakarta.annotation.PostConstruct;
+import com.unijorge.devsoft.AV3.Keys;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -12,7 +12,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static com.unijorge.devsoft.AV3.Controller.NOISE_DATA;
-import static com.unijorge.devsoft.AV3.Controller.NOISE_MAP;
+import static com.unijorge.devsoft.AV3.APIController.NOISE_DATA;
+import static com.unijorge.devsoft.AV3.APIController.NOISE_MAP;
 
 @Service
 @EnableAsync
@@ -35,8 +35,8 @@ public class Mapper {
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
     public static final int diff = 6;
 
-    @PostConstruct
-    @Scheduled(fixedRate = 3600000)
+    //@PostConstruct
+    //@Scheduled(fixedRate = 3600000)
     public void initMap(){
         new Thread(() -> {
             final Coordinate coordEnd = Coordinate.of(-90, 180);
