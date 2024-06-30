@@ -33,6 +33,7 @@ import static com.unijorge.devsoft.AV3.Controller.NOISE_MAP;
 public class Mapper {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
+    public static final int diff = 6;
 
     @PostConstruct
     @Scheduled(fixedRate = 3600000)
@@ -40,7 +41,6 @@ public class Mapper {
         new Thread(() -> {
             final Coordinate coordEnd = Coordinate.of(-90, 180);
             final Coordinate coordStart = Coordinate.of(90, -180);
-            final double diff = 6;
 
             final String component = "pm10";
 
@@ -111,14 +111,14 @@ public class Mapper {
                                 .asJSON();
                     }
                     catch (HttpClientErrorException e) { logger.error("Erro de conexão"); }
-                    catch (IllegalStateException e) { logger.error("Rate limit"); }
+                    catch (IllegalStateException e) { logger.error("Rate limit"); return; }
                     logger.debug("lat: {}, lon: {}", finalLatitude, finalLongitude);
                     logger.debug("json: {}", json);
 
                     try {
                         pm10MapGenerator.noiseMapMapper(json, finalLongitudeImage, finalLatitudeImage, component);
                         JSONObject response = new JSONObject();
-                        response.put(finalLatitude + "," + finalLatitude, json);
+                        response.put(finalLongitude + "," + finalLatitude, json);
                         responses.add(response);
                     }
                     catch (ParseException e) { throw new RuntimeException(e); }

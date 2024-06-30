@@ -6,7 +6,6 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +16,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
 import java.io.File;
+
+import static com.unijorge.devsoft.AV3.Mapper.diff;
 
 @EnableCaching
 @org.springframework.stereotype.Controller
@@ -42,7 +43,14 @@ public class Controller implements WebMvcConfigurer {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode root = mapper.readTree(new File(NOISE_DATA));
-        String coordXY = x+","+y;
+
+
+        // Since diff is probably always going to be in between values requested from the map,
+        // this way it can always return a value.
+        float roundedX = Math.round(x / diff) * diff;
+        float roundedY = Math.round(y / diff) * diff;
+
+        String coordXY = roundedX+","+roundedY;
 
         for (JsonNode node : root) {
             if (node.get(coordXY) != null) {
